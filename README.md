@@ -74,7 +74,9 @@ Front and lower-button actions receive a brief LED acknowledgement; scheduled ch
 
 ## License and credits
 
-Created by **[varanu5](https://github.com/varanu5)** as a hobby project for my own needs, and shared with the community in the hope that others find it useful. Please use the firmware at your own risk. I cannot take responsibility for damaged or bricked devices, or lost data.
+Created by **[varanu5](https://github.com/varanu5)**  as a hobby project for my own needs, and shared with the community in the hope that others find it useful.
+
+This is independent community firmware for the ZECTRIX NOTE4C Devkit, and is not affiliated with or endorsed by ZECTRIX. Please use the firmware at your own risk. I cannot take responsibility for damaged or bricked devices, or lost data.
 
 Thanks to the Tesserae project and the firmware, display, font, QR-library etc. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
