@@ -1,0 +1,9 @@
+firmware/build*/
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/managed_components/
+firmware/main/secrets.h
+.tools/
+__pycache__/
+*.pyc
+.DS_Store
