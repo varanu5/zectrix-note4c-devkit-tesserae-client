@@ -25,30 +25,15 @@ Display pictures from [Tesserae](https://github.com/dmellok/tesserae) Cloud or y
 
 ## Install and set up
 
-1. **Back up your device (strongly recommended, optional).** A verified backup gives you a way to restore the original firmware. If you choose to skip it, continue to step 2. To make a backup, install Python and esptool 5.x using the [tool setup instructions](FLASHING.md#1-prepare-the-tools-and-connect). Connect a USB-C data cable, close serial monitors and open a new, empty backup folder in your terminal. List the available ports:
+**The easiest and recommended method is the web installer: [https://note4ctesserae.pages.dev](https://note4ctesserae.pages.dev).** Open it in desktop **Chrome or Edge**. Web installation does not require Python, command-line tools or downloading firmware files yourself.
 
-   ```sh
-   python -m serial.tools.list_ports
-   ```
-
-   Replace `PORT` below with your device's port, such as `/dev/cu.usbmodem1101` on macOS, `/dev/ttyACM0` on Linux or `COM3` on Windows. Read the complete 16 MB flash:
-
-   ```sh
-   python -m esptool --chip esp32s3 --port PORT --baud 460800 --after no-reset read-flash 0x0 0x1000000 original-firmware.bin
-   ```
-
-   After the read finishes, verify the backup against the device:
-
-   ```sh
-   python -m esptool --chip esp32s3 --port PORT --baud 460800 --after no-reset verify-flash 0x0 original-firmware.bin
-   ```
-
-   Successful verification confirms that the backup matches the device. Keep the verified backup somewhere safe and private; it may contain Wi-Fi credentials and device-specific settings. Do not overwrite an earlier backup. The message `Staying in bootloader` is expected and leaves the device ready for flashing. If the port disappears or cannot connect, follow the [connection troubleshooting steps](FLASHING.md#connection-troubleshooting).
-
-2. **Install firmware.** Download the 1.2.0 assets from [GitHub Releases](https://github.com/varanu5/zectrix-note4c-devkit-tesserae-client/releases) and follow the [manual flashing guide](FLASHING.md#flash-manually), or open the [web installer](https://note4ctesserae.pages.dev) and check its displayed firmware version before flashing. Use desktop Chrome or Edge, click **Connect device** and select your Note4c. If your device does not appear, try holding the **Front button** until the USB device appears, then release it and select the device. Choose **Fresh install** for the first installation, or **Update** to keep settings on a compatible installation. Click **Install firmware** and keep USB connected until verification completes. The website does not create a backup automatically. See the [flashing guide](FLASHING.md) for more details.
+1. **Back up your device (strongly recommended, optional).** A verified backup gives you a way to restore the original firmware. Follow the [backup and verification instructions](FLASHING.md#2-back-up-and-verify-before-flashing), and keep the backup safe and private. The website does not create a backup automatically. If you choose to skip it, continue to step 2.
+2. **Install using the website.** Check the displayed firmware version, connect a USB-C data cable and close other serial monitors. Click **Connect device** and select your Note4c. If your device does not appear, try holding the **Front button** until the USB device appears, then release it and select the device. Choose **Fresh install** for the first installation, or **Update** to keep settings on a compatible installation, then click the install button. Keep USB connected until verification completes and the installer requests a restart. If the device does not start, release the Front button and reconnect USB or press **RESET**. See the [web flashing guide](FLASHING.md#flash-using-the-website) for more details.
 3. **For a fresh installation, join the setup network** shown on the display: `Note4c-Setup-XXXX`, password `tesserae`. If setup does not open automatically, visit **http://192.168.4.1**.
 4. **Enter Wi-Fi details**, choose Local REST, Cloud or Relay, complete its connection details and choose a refresh mode, then press **Save & restart**. For an existing network, leaving its password blank keeps the saved password.
 5. **For Local REST**, enter the server URL and optional Device ID, then register in Tesserae under **Settings → Devices** or enter a six-digit pairing code. **For Cloud**, enter the eight-digit claim code from **Settings → Panels → Add a panel** and optionally choose a Device ID; the Cloud URL is fixed in firmware. **For Relay**, enter the HTTPS relay address and the pairing code created by your own server. For a local server, use **ZecTrix NOTE4C Devkit** and **Nominal BWRY**. Send an image or assign a lineup and schedule.
+
+**Alternative: manual flashing.** If you prefer command-line tools, download the 1.2.0 assets from [GitHub Releases](https://github.com/varanu5/zectrix-note4c-devkit-tesserae-client/releases) and follow the [manual flashing guide](FLASHING.md#flash-manually).
 
 Local REST, Cloud and Relay each retain their own saved connection details, credentials and server sleep intervals. A blank code keeps the selected connection's existing pairing when its endpoint and ID are unchanged, including when switching back from another mode. Changing only Wi-Fi or refresh mode does not require another code. New endpoints, changed IDs or an explicitly entered new code start pairing again. Wi-Fi and display refresh mode are shared.
 
