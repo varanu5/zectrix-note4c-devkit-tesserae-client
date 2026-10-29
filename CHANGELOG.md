@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0
+
+- Add Tesserae Cloud setup with a fixed Cloud URL, an eight-digit claim code and an optional Device ID.
+- Save Local REST, Cloud and Relay settings independently, including pairing credentials and server sleep intervals. Switching connections or changing Wi-Fi or refresh speed keeps an existing pairing when its endpoint and ID are unchanged.
+- Show the saved device ID, connection, endpoint, firmware version and setup IP in the portal header.
+- Show the same Unpaired instruction screen for confirmed Local REST, Cloud and Relay removal. REST/Cloud retry discovery after 24-hour sleeps; the 20-second setup hold and low-battery protection remain available.
+- Fix Cloud HTTPS verification for cross-signed certificate chains and log successful TLS connections without weakening certificate or hostname checks.
+
 ## 1.1.1
 
 - Show the Cloud relay address as a grey example when no address is saved; require an entered address for setup.

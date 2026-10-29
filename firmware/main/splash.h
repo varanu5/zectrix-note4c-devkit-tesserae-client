@@ -7,4 +7,5 @@ esp_err_t splash_setup(const char *ssid);
 esp_err_t splash_waiting(bool registered);
 void splash_low_battery(bool low, int mv);
 
-void splash_relay_removed(void);
+void splash_unpaired(void);
+void splash_unpaired_clear(void);

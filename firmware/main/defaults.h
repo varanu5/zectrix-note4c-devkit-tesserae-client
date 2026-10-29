@@ -8,6 +8,7 @@
 #define FW_VERSION "host-test"
 #endif
 #define DEVICE_KIND "note4c_client"
+#define SETUP_CLOUD_URL "https://cloud.tesserae.ink"
 #define WIFI_HOSTNAME "tesserae-note4c"
 #define WIFI_CONNECT_RETRIES 5
 #define WIFI_FAST_CONNECT_RETRIES 1

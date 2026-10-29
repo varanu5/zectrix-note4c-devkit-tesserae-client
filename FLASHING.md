@@ -1,10 +1,10 @@
 # Install or update firmware
 
-For the **ZecTrix NOTE4C Devkit** with 16 MB flash. Choose [web flashing](#flash-using-the-website) or [manual flashing](#flash-manually). You only need one method.
+For firmware **1.2.0** on the **ZecTrix NOTE4C Devkit** with 16 MB flash. Choose [web flashing](#flash-using-the-website) or [manual flashing](#flash-manually). You only need one method.
 
 ## Flash using the website
 
-Before your first installation, **back up and verify the device** using the [backup steps below](#2-back-up-and-verify-before-flashing) or the website’s backup guide. The website does not create a backup automatically.
+Before your first installation, a verified backup is **strongly recommended but optional**. Use the [backup steps below](#2-back-up-and-verify-before-flashing) or the website’s backup guide. The website does not create a backup automatically.
 
 1. Open **[note4ctesserae.pages.dev](https://note4ctesserae.pages.dev)** in desktop **Chrome or Edge**.
 2. Connect a USB-C data cable and close other serial tools. Click **Connect device** and select the USB JTAG/serial device. No button press is needed if it already appears. If it is missing, briefly hold the front button and release it when USB appears, then try again.
@@ -18,7 +18,7 @@ The website also has a **Serial monitor** for viewing device logs. You can stop 
 
 ## Flash manually
 
-Follow these steps in order. Make and verify the backup before writing firmware.
+Follow these steps in order. A verified backup is strongly recommended but optional; if you choose to skip it, continue from tool setup to step 3.
 
 ### 1. Prepare the tools and connect
 
@@ -60,6 +60,8 @@ The output should identify **ESP32-S3** and **16 MB flash**.
 
 ### 2. Back up and verify before flashing
 
+This step is strongly recommended but optional. To proceed without a backup, continue to step 3.
+
 Create a **new empty folder** for this device's backup and open it in your terminal. Replace the example path:
 
 ```sh
@@ -73,7 +75,7 @@ Wait for the full **16,777,216 bytes** to finish, then verify the saved file aga
 python -m esptool --chip esp32s3 --port PORT --baud 460800 --after no-reset verify-flash 0x0 original-firmware.bin
 ```
 
-**Continue only after verification succeeds.** Keep this backup in a safe place, separate from firmware downloads. Never overwrite an earlier backup or publish it: it can contain Wi-Fi credentials and device-specific settings. Use a separate backup folder for each device and each backup.
+**Treat the backup as valid only after verification succeeds.** Keep this backup in a safe place, separate from firmware downloads. Never overwrite an earlier backup or publish it: it can contain Wi-Fi credentials and device-specific settings. Use a separate backup folder for each device and each backup.
 
 `Staying in bootloader` is expected here because the commands use `--after no-reset`. It leaves the device ready for installation. The website does not create a backup automatically.
 
@@ -91,7 +93,7 @@ If you downloaded all release assets, verify `SHA256SUMS` using `shasum -a 256 -
 
 #### Fresh install: start over
 
-This installs the firmware and clears Wi-Fi, server settings and pairing. After completing the backup above, use the single merged image:
+This installs the firmware and clears Wi-Fi, server settings and pairing. Use the single merged image:
 
 ```sh
 python -m esptool --chip esp32s3 --port PORT --baud 460800 --after hard-reset write-flash --flash-mode dio --flash-freq 80m --flash-size 16MB 0x0 zectrix-note4c-devkit-tesserae-client-fresh-install.bin
@@ -119,9 +121,9 @@ This preserves saved settings and invalidates the old inactive application. Do n
 
 ### 4. Start the device and view logs
 
-The manual flashing commands above request an automatic restart, as does the updated web installer after verification. If the device stays in download mode, release the front button and reconnect the USB cable or press **RESET**.
+The manual flashing commands above request an automatic restart, as does the web installer after verification. If the device stays in download mode, release the front button and reconnect the USB cable or press **RESET**.
 
-- **Fresh install:** join the displayed `Note4c-Setup-XXXX` Wi-Fi network (password `tesserae`). Open **http://192.168.4.1**, enter Wi-Fi and server details, then press **Save & restart**. Choose REST and register the device when prompted, or choose Cloud relay and enter a fresh pairing code from your server.
+- **Fresh install:** join the displayed `Note4c-Setup-XXXX` Wi-Fi network (password `tesserae`). Open **http://192.168.4.1**, enter Wi-Fi and server details, then press **Save & restart**. Choose Local REST and register the device or enter its six-digit code; choose Cloud and enter its eight-digit claim code; or choose Relay and enter the code from your server.
 - **Update:** the device reconnects using its saved settings.
 
 Use the website's **Serial monitor**, or run this in the terminal after closing other serial tools:
@@ -131,6 +133,10 @@ python -m esp_idf_monitor --port PORT --baud 115200 --target esp32s3 --no-reset
 ```
 
 Exit with **Ctrl+]**. USB disconnects during deep sleep are normal; the monitor waits for reconnection. Recheck the port if it changes. A locally built matching `.elf` file can be supplied for decoded crash traces.
+
+## Settings when updating or downgrading
+
+Version 1.2.0 preserves the currently saved connection and gives Local REST, Cloud and Relay independent profiles. Inactive settings overwritten by older firmware must be entered once. Use the update arguments to preserve settings. Older firmware reads the pre-upgrade settings snapshot, not changes saved in 1.2.0; upgrading again resumes the saved profiles. Restoring a full backup replaces both firmware and settings.
 
 ## Restore your backup
 

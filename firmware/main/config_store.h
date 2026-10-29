@@ -52,3 +52,13 @@ esp_err_t config_set_relay_config_etag(const char *);
 esp_err_t config_mark_relay_revoked(void);
 esp_err_t config_save_setup_transport(const char *, const char *, const char *, const char *, const char *,
                                       display_mode_t, bool, const char *, const char *);
+
+typedef enum { CONFIG_PROFILE_LOCAL, CONFIG_PROFILE_CLOUD, CONFIG_PROFILE_RELAY } config_profile_t;
+typedef struct {
+    char server[160], id[64];
+    bool paired, pending;
+} config_profile_view_t;
+config_profile_t config_active_profile(void);
+void config_get_profile(config_profile_t mode, config_profile_view_t *out);
+bool config_rest_unpaired(void);
+esp_err_t config_note_rest_unregistered(void);

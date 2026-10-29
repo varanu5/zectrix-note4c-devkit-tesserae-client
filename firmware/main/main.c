@@ -37,6 +37,10 @@ RTC_DATA_ATTR static uint32_t s_relay_button_sequence;
 
 static void connection_sleep(uint32_t next_s, bool connected) __attribute__((noreturn));
 static void connection_sleep(uint32_t next_s, bool connected) {
+    if (config_rest_unpaired()) {
+        splash_unpaired();
+        power_sleep(86400, false);
+    }
     uint8_t previous_failures = s_connection_retry.failures;
     uint32_t seconds = connection_retry_sleep(&s_connection_retry, connected, next_s,
                                              config_get_sleep_s(SLEEP_INTERVAL_DEFAULT_S));
@@ -88,7 +92,7 @@ void app_main(void) {
     }
     if (relay && relay_pairing_revoked()) {
         relay_forget_revoked_pairing();
-        splash_relay_removed();
+        splash_unpaired();
         power_sleep(86400, false);
     }
     bool check_setup = config_setup_check_pending();
@@ -121,6 +125,7 @@ void app_main(void) {
         if (check_setup) provisioning_run("Wi-Fi connected, but the clock could not be set for HTTPS. Check internet access and try again.");
         connection_sleep(sleep, false);
     }
+    bool was_unpaired = config_rest_unpaired();
     bool paired = false, connected = false;
     const uint8_t *frame = NULL;
     uint32_t event = button ? button_event_next(relay ? &s_relay_button_sequence : &button_event, esp_random()) : 0;
@@ -139,7 +144,7 @@ void app_main(void) {
         if (relay_pairing_revoked()) {
             relay_end_wake(); wifi_stop();
             relay_forget_revoked_pairing();
-            splash_relay_removed();
+            splash_unpaired();
             power_sleep(86400, false);
         }
         frame = relay_pending_frame();
@@ -150,12 +155,15 @@ void app_main(void) {
         char token[80]; config_get_device_token(token, sizeof token);
         paired = token[0] != 0;
     }
+    if (was_unpaired && paired) setup_result = true;
     if (check_setup && !connected) {
         wifi_stop();
         if (relay) provisioning_run(relay_setup_error());
         provisioning_run("Wi-Fi connected, but the server or pairing could not be confirmed. Check the server address and pairing code.");
     }
     wifi_stop();
+    if (config_rest_unpaired()) connection_sleep(86400, connected);
+    if (paired) splash_unpaired_clear();
     bool waiting_attempted = false;
     if (setup_result && connected && paired) {
         uint8_t *saved_frame = frame

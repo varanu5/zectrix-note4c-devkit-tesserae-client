@@ -108,7 +108,9 @@ typedef struct {
 static esp_err_t on_evt(esp_http_client_event_t *e) {
     rx_t *rx = e->user_data;
     if (!rx) return ESP_OK;
-    if (e->event_id == HTTP_EVENT_ON_HEADER) {
+    if (e->event_id == HTTP_EVENT_ON_CONNECTED && !strncmp(s_http_origin, "https://", 8)) {
+        ESP_LOGI(TAG, "TLS certificate verified: %s", s_http_origin);
+    } else if (e->event_id == HTTP_EVENT_ON_HEADER) {
         rx->headers_seen = true;
         if (rx->etag && strcasecmp(e->header_key, "ETag") == 0) {
             if (strlen(e->header_value) >= rx->etag_cap) rx->overflow = true;

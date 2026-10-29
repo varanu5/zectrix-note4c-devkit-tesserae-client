@@ -13,6 +13,7 @@
 #include "wifi_manager.h"
 #include "esp_http_server.h"
 #include "esp_wifi.h"
+#include "esp_mac.h"
 #include "esp_event.h"
 #include "esp_netif.h"
 #include "esp_timer.h"
@@ -83,7 +84,7 @@ static const char k_portal_html[] =
 "</svg><span>Tesserae</span>\n"
 "</div><h1>Device setup</h1>\n"
 "</header>\n"
-"<dl class=\"status\"><dt>Device</dt><dd>ZecTrix NOTE4C Devkit</dd><dt>Firmware</dt><dd><code>{{version}}</code></dd><dt>Connection</dt><dd>REST or Cloud relay</dd></dl>\n"
+"<dl class=\"status\"><dt>Device</dt><dd>ZecTrix NOTE4C Devkit</dd><dt>Firmware</dt><dd><code>{{version}}</code></dd><dt>Device ID</dt><dd><code>{{status_id}}</code></dd><dt>Connection</dt><dd>{{status_transport}}</dd><dt>{{status_endpoint_label}}</dt><dd><code>{{status_endpoint}}</code></dd><dt>Setup IP</dt><dd><code>192.168.4.1</code></dd></dl>\n"
 "<div class=\"notice\" role=\"alert\">{{error}}</div>\n"
 "<form method=\"post\" action=\"/save\" id=\"setup-form\">\n"
 "<input type=\"hidden\" name=\"nonce\" value=\"{{nonce}}\">\n"
@@ -100,19 +101,24 @@ static const char k_portal_html[] =
 "</fieldset>\n"
 "<div class=\"refresh-help\"><p class=\"hint\">Your refresh choice is saved with the other settings using Save &amp; restart below. The selected speed applies to images and all built-in screens. Native is the default until you choose another speed. Hold the front button for 20 seconds and release at the three-flash cue to return to setup.</p></div>\n"
 "</section>\n"
-"<section class=\"card\"><h2>Device</h2>\n"
-"<div class=\"field\"><label for=\"id\">Device ID <span class=\"muted\">(optional)</span></label><input id=\"id\" name=\"id\" value=\"{{id}}\" maxlength=\"32\" pattern=\"[a-z][a-z0-9_-]{1,31}\" placeholder=\"note4c-kitchen\" autocomplete=\"off\" autocapitalize=\"none\" spellcheck=\"false\"><p class=\"hint\">Leave blank to keep the current ID. New devices get a name based on their MAC address, such as note4c-a1b2c3.</p></div>\n"
-"</section>\n"
 "<section class=\"card\"><h2>Connection</h2>\n"
-"<label class=\"radio\"><input type=\"radio\" name=\"transport\" value=\"rest\" id=\"transport-rest\" {{transport_rest}}><span><strong>REST</strong><span class=\"hint\">Connect directly to your Tesserae server.</span></span></label>\n"
-"<label class=\"radio\"><input type=\"radio\" name=\"transport\" value=\"relay\" id=\"transport-relay\" {{transport_relay}}><span><strong>Cloud relay</strong><span class=\"hint\">Receive encrypted images through a relay.</span></span></label>\n"
+"<noscript><p class=\"hint\">Fill in the fields for your selected connection only.</p></noscript>\n"
+"<label class=\"radio\"><input type=\"radio\" name=\"transport\" value=\"rest\" id=\"transport-rest\" {{transport_rest}}><span><strong>Local REST</strong><span class=\"hint\">Connect directly to your Tesserae server.</span></span></label>\n"
+"<label class=\"radio\"><input type=\"radio\" name=\"transport\" value=\"cloud\" id=\"transport-cloud\" {{transport_cloud}}><span><strong>Cloud</strong><span class=\"hint\">Connect to Tesserae Cloud with a claim code.</span></span></label>\n"
+"<label class=\"radio\"><input type=\"radio\" name=\"transport\" value=\"relay\" id=\"transport-relay\" {{transport_relay}}><span><strong>Relay</strong><span class=\"hint\">Receive encrypted images through a relay.</span></span></label>\n"
 "</section>\n"
-"<section class=\"card\" id=\"rest-fields\"><h2>Tesserae server</h2>\n"
-"<div class=\"field\"><label for=\"server\">Server URL</label><input id=\"server\" name=\"server\" value=\"{{server}}\" maxlength=\"159\" required placeholder=\"http://tesserae.local:8765\" autocomplete=\"off\" autocapitalize=\"none\" spellcheck=\"false\"><p class=\"hint\">Enter your Tesserae server address, starting with http:// or https://. Your display must be able to connect to it. For HTTPS, use a certificate from a trusted certificate provider.</p></div>\n"
+"<section class=\"card\" id=\"rest-fields\"><h2>Local REST</h2>\n"
+"<div class=\"field\"><label for=\"id\">Device ID <span class=\"muted\">(optional)</span></label><input id=\"id\" name=\"id\" value=\"{{id}}\" maxlength=\"32\" pattern=\"[a-z][a-z0-9_\\-]{1,31}\" placeholder=\"note4c-kitchen\" autocomplete=\"off\" autocapitalize=\"none\" spellcheck=\"false\"><p class=\"hint\">Leave blank to keep the saved ID for this connection. New devices get a name based on their MAC address, such as note4c-a1b2c3.</p></div>\n"
+"<div class=\"field\"><label for=\"server\">Server URL</label><input id=\"server\" name=\"server\" value=\"{{server}}\" maxlength=\"159\" data-required placeholder=\"http://tesserae.local:8765\" autocomplete=\"off\" autocapitalize=\"none\" spellcheck=\"false\"><p class=\"hint\">Enter your Tesserae server address, starting with http:// or https://. Your display must be able to connect to it. For HTTPS, use a certificate from a trusted certificate provider.</p></div>\n"
 "<div class=\"field\"><label for=\"pair\">Pairing code <span class=\"muted\">(optional)</span></label><input id=\"pair\" name=\"pair\" inputmode=\"numeric\" maxlength=\"6\" pattern=\"[0-9]{6}\" placeholder=\"6-digit code\" autocomplete=\"off\"><p class=\"hint\">Leave blank and register in Settings → Devices, or enter a code from Pair new device. An existing pairing is kept when the server and device ID stay the same.</p></div>\n"
 "</section>\n"
-"<section class=\"card\" id=\"relay-fields\"><h2>Cloud relay</h2>\n"
-"<div class=\"field\"><label for=\"relay-url\">Relay URL</label><input id=\"relay-url\" name=\"relay_url\" value=\"{{relay_url}}\" placeholder=\"https://relay.tesserae.ink\" maxlength=\"159\" required autocomplete=\"off\" autocapitalize=\"none\" spellcheck=\"false\"><p class=\"hint\">Use the relay address configured in your Tesserae server. HTTPS requires a trusted certificate.</p></div>\n"
+"<section class=\"card\" id=\"cloud-fields\"><h2>Tesserae Cloud</h2>\n"
+"<p class=\"hint\">Connects to <code>{{cloud_url}}</code>.</p>\n"
+"<div class=\"field\"><label for=\"cloud-id\">Device ID <span class=\"muted\">(optional)</span></label><input id=\"cloud-id\" name=\"cloud_id\" value=\"{{cloud_id}}\" maxlength=\"32\" pattern=\"[a-z][a-z0-9_\\-]{1,31}\" placeholder=\"note4c-kitchen\" autocomplete=\"off\" autocapitalize=\"none\" spellcheck=\"false\"><p class=\"hint\">Leave blank to keep the saved ID for this connection. Use 2–32 lowercase letters, digits, hyphens or underscores, starting with a letter. Changing the ID requires a new claim code.</p></div>\n"
+"<div class=\"field\"><label for=\"cloud-code\">Cloud claim code <span class=\"muted\">(optional when paired)</span></label><input id=\"cloud-code\" name=\"cloud_code\" inputmode=\"numeric\" maxlength=\"15\" pattern=\"[0-9 ]{8,15}\" placeholder=\"1234 5678\" autocomplete=\"off\"><p class=\"hint\">In Tesserae Cloud, open Settings → Panels → Add a panel and enter the eight-digit code. Leave blank to keep an existing pairing when the Device ID stays the same, including Wi-Fi or refresh-speed changes. A new code starts pairing again.</p></div>\n"
+"</section>\n"
+"<section class=\"card\" id=\"relay-fields\"><h2>Relay</h2>\n"
+"<div class=\"field\"><label for=\"relay-url\">Relay URL</label><input id=\"relay-url\" name=\"relay_url\" value=\"{{relay_url}}\" placeholder=\"https://relay.tesserae.ink\" maxlength=\"159\" data-required autocomplete=\"off\" autocapitalize=\"none\" spellcheck=\"false\"><p class=\"hint\">Use the relay address configured in your Tesserae server. Use HTTPS with a trusted certificate.</p></div>\n"
 "<div class=\"field\"><label for=\"relay-code\">Relay pairing code</label><input id=\"relay-code\" name=\"relay_code\" maxlength=\"32\" pattern=\"[A-Za-z0-9-]+\" autocomplete=\"off\" autocapitalize=\"none\" spellcheck=\"false\"><p class=\"hint\">Create a cloud relay pairing code in Tesserae and enter it here. Leave blank to keep an existing relay pairing at the same address.</p></div>\n"
 "<p class=\"hint\">If this device is removed from the relay, its screen will ask you to hold the front button for 20 seconds to open setup.</p>\n"
 "</section>\n"
@@ -122,12 +128,13 @@ static const char k_portal_html[] =
 "<footer>Dashboard companion · <span>dmellok/tesserae</span><br>ZecTrix NOTE4C Devkit firmware · <span>varanu5</span></footer>\n"
 "<script>\n"
 "function updateTransport(){\n"
-"const relay=document.getElementById('transport-relay').checked;\n"
-"for(const [id,active] of [['rest-fields',!relay],['relay-fields',relay]]){\n"
+"const relay=document.getElementById('transport-relay').checked,cloud=document.getElementById('transport-cloud').checked;\n"
+"for(const [id,active] of [['rest-fields',!relay&&!cloud],['cloud-fields',cloud],['relay-fields',relay]]){\n"
 "const section=document.getElementById(id);section.hidden=!active;\n"
-"section.querySelectorAll('input').forEach(input=>{input.disabled=!active;});\n"
+"section.querySelectorAll('input').forEach(input=>{input.disabled=!active;input.required=active&&input.hasAttribute('data-required');});\n"
 "}}\n"
 "document.getElementById('transport-rest').addEventListener('change',updateTransport);\n"
+"document.getElementById('transport-cloud').addEventListener('change',updateTransport);\n"
 "document.getElementById('transport-relay').addEventListener('change',updateTransport);\n"
 "updateTransport();\n"
 "const ssid=document.getElementById('ssid'),pw=document.getElementById('pass');\n"
@@ -180,8 +187,9 @@ static void scan_networks(void) {
 
 typedef struct {
     httpd_req_t *req;
-    char ssid[200], server[960], relay_url[960], id[200], error[768], networks[8192];
-    bool relay;
+    char ssid[200], server[960], relay_url[960], id[384], error[768], networks[8192];
+    char cloud_id[384], status_id[384], status_endpoint[960];
+    bool relay, cloud, saved_relay, saved_cloud;
     display_mode_t display_mode;
 } view_t;
 static const char *view_value(const char *key,void *context) {
@@ -189,9 +197,16 @@ static const char *view_value(const char *key,void *context) {
     if (!strcmp(key,"ssid")) return v->ssid;
     if (!strcmp(key,"server")) return v->server;
     if (!strcmp(key,"relay_url")) return v->relay_url;
-    if (!strcmp(key,"transport_rest")) return v->relay ? "" : "checked";
+    if (!strcmp(key,"transport_rest")) return v->relay || v->cloud ? "" : "checked";
     if (!strcmp(key,"transport_relay")) return v->relay ? "checked" : "";
+    if (!strcmp(key,"transport_cloud")) return v->cloud ? "checked" : "";
+    if (!strcmp(key,"cloud_url")) return SETUP_CLOUD_URL;
+    if (!strcmp(key,"status_id")) return v->status_id;
+    if (!strcmp(key,"status_endpoint")) return v->status_endpoint;
+    if (!strcmp(key,"status_endpoint_label")) return v->saved_relay ? "Relay" : "Server";
+    if (!strcmp(key,"status_transport")) return v->saved_relay ? "Relay" : v->saved_cloud ? "Cloud" : "Local REST";
     if (!strcmp(key,"id")) return v->id;
+    if (!strcmp(key,"cloud_id")) return v->cloud_id;
     if (!strcmp(key,"error")) return v->error;
     if (!strcmp(key,"networks")) return v->networks;
     if (!strcmp(key,"nonce")) return s_nonce;
@@ -210,21 +225,52 @@ static esp_err_t form(httpd_req_t *req,const char *error,const setup_request_t *
     if (!v) return httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"Not enough memory. Retry setup.");
     v->req=req;
     v->display_mode=config_get_display_mode();
-    setup_request_t fields={0};
-    if (submitted) fields=*submitted;
-    else {
-        config_get_wifi(fields.ssid,sizeof fields.ssid,fields.pass,sizeof fields.pass);
-        config_get_server_url(fields.server,sizeof fields.server);
-        fields.relay = config_relay_configured();
-        config_get_relay_url(fields.relay_url,sizeof fields.relay_url);
-        config_get_device_id(fields.id,sizeof fields.id);
+    char saved_id[64], endpoint[160];
+    v->saved_relay=config_relay_configured();
+    config_get_server_url(endpoint,sizeof endpoint);
+    v->saved_cloud=!v->saved_relay && !strcmp(endpoint,SETUP_CLOUD_URL);
+    if (v->saved_relay) {
+        config_get_relay_url(endpoint,sizeof endpoint);
+        config_get_relay_device(saved_id,sizeof saved_id);
+        if (!saved_id[0]) strcpy(saved_id,"Assigned after pairing");
+    } else {
+        config_get_device_id(saved_id,sizeof saved_id);
+        if (!saved_id[0]) {
+            uint8_t mac[6];
+            if (esp_read_mac(mac,ESP_MAC_WIFI_STA)==ESP_OK)
+                snprintf(saved_id,sizeof saved_id,"note4c-%02x%02x%02x",mac[3],mac[4],mac[5]);
+            else strcpy(saved_id,"Not assigned");
+        }
     }
+    provform_html_escape(saved_id,v->status_id,sizeof v->status_id);
+    provform_html_escape(endpoint[0] ? endpoint : "Not configured",v->status_endpoint,sizeof v->status_endpoint);
+    config_profile_view_t local, cloud, relay;
+    config_get_profile(CONFIG_PROFILE_LOCAL, &local);
+    config_get_profile(CONFIG_PROFILE_CLOUD, &cloud);
+    config_get_profile(CONFIG_PROFILE_RELAY, &relay);
+    setup_request_t fields={0};
+    config_get_wifi(fields.ssid,sizeof fields.ssid,fields.pass,sizeof fields.pass);
+    fields.relay = v->saved_relay;
+    fields.cloud = v->saved_cloud;
+    if (submitted) {
+        fields = *submitted;
+        if (fields.relay) strlcpy(relay.server, fields.relay_url, sizeof relay.server);
+        else if (fields.cloud) strlcpy(cloud.id, fields.id, sizeof cloud.id);
+        else {
+            strlcpy(local.server, fields.server, sizeof local.server);
+            strlcpy(local.id, fields.id, sizeof local.id);
+        }
+    }
+    if (!provform_device_id_valid(local.id)) local.id[0]=0;
+    if (!provform_device_id_valid(cloud.id)) cloud.id[0]=0;
     v->relay = fields.relay;
-    provform_html_escape(fields.relay_url,v->relay_url,sizeof v->relay_url);
+    v->cloud = fields.cloud;
+    provform_html_escape(relay.server,v->relay_url,sizeof v->relay_url);
     if (fields.has_display_mode) v->display_mode=fields.display_mode;
     provform_html_escape(fields.ssid,v->ssid,sizeof v->ssid);
-    provform_html_escape(fields.server,v->server,sizeof v->server);
-    provform_html_escape(fields.id,v->id,sizeof v->id);
+    provform_html_escape(local.server,v->server,sizeof v->server);
+    provform_html_escape(local.id,v->id,sizeof v->id);
+    provform_html_escape(cloud.id,v->cloud_id,sizeof v->cloud_id);
     provform_html_escape(error ? error : "",v->error,sizeof v->error);
     memset(&fields,0,sizeof fields);
     size_t used=0;
@@ -258,7 +304,7 @@ static esp_err_t saved(httpd_req_t *req) {
         "<title>Settings saved</title><style>body{font:17px/1.5 system-ui;background:#f1f0ec;color:#18181b;padding:40px 20px}"
         "main{max-width:420px;margin:auto;background:white;padding:28px;border-radius:12px}h1{color:#0d8c7e;font-size:26px}</style>"
         "<main><h1>Settings saved</h1><p>Your ZecTrix NOTE4C Devkit is restarting and checking its connection.</p>"
-        "<p>Return to your home Wi-Fi and open Tesserae. For REST, register the device in Settings &rarr; Devices if needed. Cloud relay pairing completes automatically when your server is online.</p>"
+        "<p>Return to your home Wi-Fi and open Tesserae. For Local REST without a code, register the device in Settings &rarr; Devices if needed. Cloud claims the panel automatically. Relay pairing completes when your server is online.</p>"
         "<p>If the display returns to Wi-Fi setup, reconnect to its setup network and open 192.168.4.1 for details.</p></main></html>");
     atomic_store(&s_saved,true);
     return result;
@@ -285,15 +331,20 @@ static esp_err_t read_form(httpd_req_t *req,char *body,size_t capacity) {
 static esp_err_t save(httpd_req_t *req) {
     static char body[2048];
     if (read_form(req,body,sizeof body)!=ESP_OK) return ESP_FAIL;
-    char old_ssid[33],old_pass[65],old_id[33];
+    char old_ssid[33],old_pass[65],transport[16];
     config_get_wifi(old_ssid,sizeof old_ssid,old_pass,sizeof old_pass);
-    config_get_device_id(old_id,sizeof old_id);
+    provform_parse_field(body,"transport",transport,sizeof transport);
+    config_profile_t selected = !strcmp(transport,"cloud") ? CONFIG_PROFILE_CLOUD :
+        !strcmp(transport,"relay") ? CONFIG_PROFILE_RELAY : CONFIG_PROFILE_LOCAL;
+    config_profile_view_t profile;
+    config_get_profile(selected,&profile);
     setup_request_t fields;
-    const char *error=setup_request_parse(body,s_nonce,old_ssid,old_pass,old_id,&fields);
+    const char *error=setup_request_parse(body,s_nonce,old_ssid,old_pass,profile.id,&fields);
     memset(old_pass,0,sizeof old_pass); memset(body,0,sizeof body);
+    if (!error && fields.cloud)
+        error=setup_request_check_cloud_pairing(&fields,profile.server,profile.id,profile.paired);
     if (!error && fields.relay && !fields.relay_code[0]) {
-        char current[160]; config_get_relay_url(current,sizeof current);
-        if (!config_relay_configured() || config_relay_revoked() || strcmp(current,fields.relay_url))
+        if ((!profile.paired && !profile.pending) || strcmp(profile.server,fields.relay_url))
             error="Enter a new cloud relay pairing code from your server.";
     }
     if (!error && config_save_setup_transport(fields.ssid,fields.pass,fields.server,fields.id,fields.pair,

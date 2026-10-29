@@ -103,7 +103,9 @@ static bool http_origin(const char *url, char *out, size_t cap) {
 static esp_err_t http_ev(esp_http_client_event_t *e) {
     resp_t *r = (resp_t *)e->user_data;
     if (!r) return ESP_OK;
-    if (e->event_id == HTTP_EVENT_ON_HEADER) {
+    if (e->event_id == HTTP_EVENT_ON_CONNECTED && !strncmp(s_http_origin, "https://", 8)) {
+        ESP_LOGI(TAG, "TLS certificate verified: %s", s_http_origin);
+    } else if (e->event_id == HTTP_EVENT_ON_HEADER) {
         r->headers_seen = true;
         if (strcasecmp(e->header_key, "ETag") == 0)
             strlcpy(r->etag, e->header_value, sizeof(r->etag));
@@ -344,13 +346,14 @@ static int ensure_paired(const char *server) {
     }
 
     if (r.overflow) return REST_DISCOVER_RETRY_S;
-    cJSON *j = cJSON_Parse(rbuf);
+    cJSON *j = cJSON_ParseWithOpts(rbuf, NULL, true);
+    if (!cJSON_IsObject(j)) { cJSON_Delete(j); j = NULL; }
     if (!j) { ESP_LOGE(TAG, "pair response not JSON"); return REST_DISCOVER_RETRY_S; }
     int retry = REST_DISCOVER_RETRY_S;
     cJSON *tok = cJSON_GetObjectItemCaseSensitive(j, "device_token");
     cJSON *id  = cJSON_GetObjectItemCaseSensitive(j, "device_id");
     cJSON *registered = cJSON_GetObjectItemCaseSensitive(j, "registered");
-    if (cJSON_IsString(tok) && tok->valuestring[0]) {
+    if (!cJSON_IsFalse(registered) && cJSON_IsString(tok) && tok->valuestring[0]) {
         // Server's canonical device_id wins (it lowercases / may rename).
         const char *canonical = cJSON_IsString(id) && id->valuestring[0] ? id->valuestring : dev_id;
         esp_err_t saved = config_save_pairing(canonical, tok->valuestring, use_register);
@@ -364,7 +367,17 @@ static int ensure_paired(const char *server) {
         ESP_LOGI(TAG, "paired: device_id=%s", cJSON_IsString(id) ? id->valuestring : dev_id);
         retry = 0;
     } else {
-        if (cJSON_IsFalse(registered)) s_connection_ok = true;
+        if (!use_register && cJSON_IsFalse(registered) &&
+            (!tok || cJSON_IsNull(tok) || (cJSON_IsString(tok) && !tok->valuestring[0]))) {
+            s_connection_ok = true;
+            esp_err_t saved = config_note_rest_unregistered();
+            if (saved != ESP_OK) ESP_LOGW(TAG, "unpaired state not saved: %s", esp_err_to_name(saved));
+            if (config_rest_unpaired()) {
+                ESP_LOGW(TAG, "device is no longer registered; showing setup instructions; retry in 86400 s");
+                cJSON_Delete(j);
+                return 86400;
+            }
+        }
         cJSON *ra = cJSON_GetObjectItemCaseSensitive(j, "retry_after_s");
         if (cJSON_IsNumber(ra) && ra->valueint > 0) retry = ra->valueint;
         ESP_LOGW(TAG, "not claimed yet as '%s' — open Tesserae Settings->Devices and Register it. retry in %ds",

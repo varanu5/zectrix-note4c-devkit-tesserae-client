@@ -14,7 +14,9 @@ esp_err_t splash_setup(const char *ssid) {
     if (!screen_setup(framebuf(),ssid)) return ESP_ERR_INVALID_SIZE;
     return display_present_selected(framebuf());
 }
+void splash_unpaired_clear(void) { s_removed_painted = false; }
 esp_err_t splash_waiting(bool registered) {
+    splash_unpaired_clear();
     if (!screen_waiting(framebuf(),registered)) return ESP_ERR_INVALID_SIZE;
     return display_present_selected(framebuf());
 }
@@ -26,7 +28,7 @@ void splash_low_battery(bool low,int mv) {
     if (!s_low_painted) ESP_LOGW("splash","charge screen pending; retry on a later battery check");
 }
 
-void splash_relay_removed(void) {
+void splash_unpaired(void) {
     if (s_removed_painted) return;
     if (screen_relay_removed(framebuf()))
         s_removed_painted = display_present_selected(framebuf()) == ESP_OK;
