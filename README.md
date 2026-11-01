@@ -5,8 +5,21 @@
 </p>
 
 <p align="center">
-  <img src="screenshots/note4c_title.png" alt="NOTE4C running the firmware"><br>
-  <em>Note4C in action</em>
+  <strong>Firmware 1.2.1</strong> · ESP-IDF 6.1 · Local REST · Cloud · Relay
+</p>
+
+<p align="center">
+  <a href="screenshots/note4c_title.png"><img src="screenshots/note4c_title.png" width="360" alt="Dashboard with a to-do list, connected UniFi clients and current weather"></a>
+  <a href="screenshots/note4c_weather.png"><img src="screenshots/note4c_weather.png" width="360" alt="Full-screen weather widget with temperature, conditions, humidity, wind and precipitation"></a>
+  <br>
+  <em>A compact dashboard and a full-screen weather widget.</em>
+</p>
+
+<p align="center">
+  <a href="https://note4ctesserae.pages.dev"><strong>Install firmware</strong></a> ·
+  <a href="#install-and-set-up">Setup guide</a> ·
+  <a href="#buttons-and-led">Buttons and LED</a> ·
+  <a href="CHANGELOG.md">Changelog</a>
 </p>
 
 > [!WARNING]
@@ -14,7 +27,7 @@
 
 Display pictures from [Tesserae](https://github.com/dmellok/tesserae) Cloud or your own Tesserae server on the **ZecTrix NOTE4C Devkit**. Configure Wi-Fi and your server from a phone, then let the device check for pictures on its schedule.
 
-**Version 1.2.0 · ESP-IDF 6.1.** Local REST, Tesserae Cloud and Relay support. Display operation, fast refresh, charging indication and normal sleep/wake cycles have been tested on hardware; broader recovery testing and battery characterization are still in progress. See [CHANGELOG.md](CHANGELOG.md).
+Display operation, fast refresh, charging indication and normal sleep/wake cycles have been tested on hardware. Button responsiveness after the 1.2.1 fix and a normal Front wake/check/sleep cycle are confirmed; broader recovery testing and battery characterization remain open. See [CHANGELOG.md](CHANGELOG.md).
 
 ## What it does
 
@@ -42,7 +55,9 @@ Display pictures from [Tesserae](https://github.com/dmellok/tesserae) Cloud or y
 4. **Enter Wi-Fi details**, choose Local REST, Cloud or Relay, complete its connection details and choose a refresh mode, then press **Save & restart**. For an existing network, leaving its password blank keeps the saved password.
 5. **For Local REST**, enter the server URL and optional Device ID, then register in Tesserae under **Settings → Devices** or enter a six-digit pairing code. **For Cloud**, enter the eight-digit claim code from **Settings → Panels → Add a panel** and optionally choose a Device ID; the Cloud URL is fixed in firmware. **For Relay**, enter the HTTPS relay address and the pairing code created by your own server. For a local server, use **ZecTrix NOTE4C Devkit** and **Nominal BWRY**. Send an image or assign a lineup and schedule.
 
-**Alternative: manual flashing.** If you prefer command-line tools, download the 1.2.0 assets from [GitHub Releases](https://github.com/varanu5/zectrix-note4c-devkit-tesserae-client/releases) and follow the [manual flashing guide](FLASHING.md#flash-manually).
+**Alternative: manual flashing.** If you prefer command-line tools, download the 1.2.1 assets from [GitHub Releases](https://github.com/varanu5/zectrix-note4c-devkit-tesserae-client/releases) and follow the [manual flashing guide](FLASHING.md#flash-manually).
+
+## Connections and updates
 
 Local REST, Cloud and Relay each retain their own saved connection details, credentials and server sleep intervals. A blank code keeps the selected connection's existing pairing when its endpoint and ID are unchanged, including when switching back from another mode. Changing only Wi-Fi or refresh mode does not require another code. New endpoints, changed IDs or an explicitly entered new code start pairing again. Wi-Fi and display refresh mode are shared.
 
@@ -50,7 +65,7 @@ The setup header shows the saved device ID, connection, endpoint, firmware versi
 
 Relay receives authenticated, encrypted images and settings. All three modes use the same **Unpaired** instruction screen after confirmed removal and sleep for 24 hours. REST/Cloud first attempt credential recovery and only mark a previously paired device unpaired when discovery confirms it is unregistered. Temporary network errors do not trigger this screen. REST/Cloud retry discovery on later wakes; Relay requires a new pairing code. Press Front to wake sooner or hold it for 20 seconds to open setup. Low-battery protection still takes priority, and opening setup does not erase saved profiles.
 
-Updates preserve the currently stored connection. Older firmware may already have overwritten inactive connections; enter those once and 1.2.0 will retain them separately. Downgrading reads the pre-upgrade settings snapshot, not later profile edits; upgrading again resumes the profiles saved by 1.2.0.
+Updates preserve saved connection profiles. Older firmware may already have overwritten inactive connections; enter those once to save them separately. Downgrading to firmware predating independent profiles reads the pre-upgrade settings snapshot, not later profile edits; upgrading again resumes the saved profiles.
 
 Relay navigation and refresh actions wait up to 45 seconds, checking every five seconds and stopping early when a new image arrives. Normal scheduled checks have no additional wait. MQTT, Bluetooth and Wi-Fi firmware updates are not implemented yet.
 
@@ -65,6 +80,8 @@ Relay navigation and refresh actions wait up to 45 seconds, checking every five 
 | Upper side button | Unused |
 
 Front and lower-button actions receive a brief LED acknowledgement; scheduled checks do not. The LED stays on while charging and turns off when charging stops, according to the charger hardware rather than the estimated battery percentage.
+
+Each wake handles one action. Additional presses during network or display work are not queued. If Front or Down remains held when the operation finishes, the device waits for release, using light sleep for prolonged holds, then enters deep sleep with both buttons enabled for wake-up.
 
 ## License and credits
 

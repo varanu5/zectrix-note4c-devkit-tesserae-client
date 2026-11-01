@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1
+
+- Fix Front/Down becoming unable to wake the device when held as an operation finishes. Wait for release using light sleep for prolonged holds, then arm both buttons for deep sleep.
+- Preserve USB charging-state wake, existing button gestures, one action per wake and saved Wi-Fi/connection settings.
+
 ## 1.2.0
 
 - Add Tesserae Cloud setup with a fixed Cloud URL, an eight-digit claim code and an optional Device ID.

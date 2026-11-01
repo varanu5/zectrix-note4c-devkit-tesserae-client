@@ -209,10 +209,37 @@ button_action_t power_boot_action(void) {
     led_override(false);
     return action;
 }
-static uint64_t sleep_inputs(void) {
+static void wait_button_release(void) {
     int64_t deadline = esp_timer_get_time() + 2000000;
     while ((!gpio_get_level(PIN_BUTTON_FRONT) || !gpio_get_level(PIN_BUTTON_DOWN)) &&
            esp_timer_get_time() < deadline) vTaskDelay(pdMS_TO_TICKS(20));
+    bool warned = false;
+    while (!gpio_get_level(PIN_BUTTON_FRONT) || !gpio_get_level(PIN_BUTTON_DOWN)) {
+        const int buttons[] = {PIN_BUTTON_FRONT, PIN_BUTTON_DOWN};
+        for (unsigned i = 0; i < 2; i++) {
+            if (!gpio_get_level(buttons[i]))
+                ESP_ERROR_CHECK(gpio_wakeup_enable(buttons[i], GPIO_INTR_HIGH_LEVEL));
+        }
+        ESP_ERROR_CHECK(gpio_wakeup_enable(PIN_CHARGE_ACTIVE,
+            gpio_get_level(PIN_CHARGE_ACTIVE) ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL));
+        ESP_ERROR_CHECK(esp_sleep_enable_gpio_wakeup());
+        ESP_ERROR_CHECK(esp_sleep_enable_timer_wakeup(1000000));
+        esp_err_t err = esp_light_sleep_start();
+        ESP_ERROR_CHECK(gpio_wakeup_disable(PIN_BUTTON_FRONT));
+        ESP_ERROR_CHECK(gpio_wakeup_disable(PIN_BUTTON_DOWN));
+        ESP_ERROR_CHECK(gpio_wakeup_disable(PIN_CHARGE_ACTIVE));
+        ESP_ERROR_CHECK(esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_GPIO));
+        ESP_ERROR_CHECK(esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER));
+        if (err != ESP_OK && !warned) {
+            ESP_LOGW(TAG, "button release sleep: %s; retrying", esp_err_to_name(err));
+            warned = true;
+        }
+        // Let idle and charging tasks run, including after a rejected sleep.
+        vTaskDelay(pdMS_TO_TICKS(20));
+    }
+}
+static uint64_t sleep_inputs(void) {
+    wait_button_release();
     bool stable = charge_settle();
     ESP_ERROR_CHECK(esp_timer_stop(s_charge_timer));
     portENTER_CRITICAL(&s_led_lock);
@@ -225,11 +252,9 @@ static uint64_t sleep_inputs(void) {
     uint64_t mask = 0;
     const int buttons[] = {PIN_BUTTON_FRONT, PIN_BUTTON_DOWN};
     for (unsigned i = 0; i < 2; i++) {
-        if (gpio_get_level(buttons[i])) {
-            mask |= 1ULL << buttons[i];
-            rtc_gpio_pullup_en(buttons[i]);
-            rtc_gpio_pulldown_dis(buttons[i]);
-        }
+        mask |= 1ULL << buttons[i];
+        rtc_gpio_pullup_en(buttons[i]);
+        rtc_gpio_pulldown_dis(buttons[i]);
     }
     // Limit rapid charger transitions until the next ordinary wake.
     if (stable && s_charge_wakes < 4) {

@@ -1,6 +1,6 @@
 # Install or update firmware
 
-For firmware **1.2.0** on the **ZecTrix NOTE4C Devkit** with 16 MB flash. Choose [web flashing](#flash-using-the-website) or [manual flashing](#flash-manually). You only need one method.
+For firmware **1.2.1** on the **ZecTrix NOTE4C Devkit** with 16 MB flash. Choose [web flashing](#flash-using-the-website) or [manual flashing](#flash-manually). You only need one method.
 
 ## Flash using the website
 
@@ -136,7 +136,7 @@ Exit with **Ctrl+]**. USB disconnects during deep sleep are normal; the monitor 
 
 ## Settings when updating or downgrading
 
-Version 1.2.0 preserves the currently saved connection and gives Local REST, Cloud and Relay independent profiles. Inactive settings overwritten by older firmware must be entered once. Use the update arguments to preserve settings. Older firmware reads the pre-upgrade settings snapshot, not changes saved in 1.2.0; upgrading again resumes the saved profiles. Restoring a full backup replaces both firmware and settings.
+Version 1.2.1 retains the independent Local REST, Cloud and Relay profiles introduced in 1.2.0. Inactive settings overwritten by older firmware must be entered once. Use the update arguments to preserve settings. Firmware predating independent profiles reads the pre-upgrade settings snapshot, not later profile edits; upgrading again resumes the saved profiles. Restoring a full backup replaces both firmware and settings.
 
 ## Restore your backup
 
