@@ -1,4 +1,13 @@
-# ZecTrix NOTE4C Devkit · Tesserae firmware
+<h1 align="center">ZecTrix NOTE4C Devkit × Tesserae</h1>
+
+<p align="center">
+  Your photos and widgets on a four-colour e-paper frame.
+</p>
+
+<p align="center">
+  <img src="screenshots/note4c_title.png" alt="NOTE4C running the firmware"><br>
+  <em>Note4C in action</em>
+</p>
 
 > [!WARNING]
 > **For the ZecTrix NOTE4C Devkit with the four-colour display only! Do not flash this firmware onto the grayscale NOTE4 variant.**
