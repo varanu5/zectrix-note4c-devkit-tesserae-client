@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="screenshots/note4c_weather.png"><img src="screenshots/note4c_weather.png" width="360" alt="Full-screen weather widget with temperature, conditions, humidity, wind and precipitation"></a>
+  <a href="screenshots/note4c_weather.png"><img src="screenshots/note4c_weather.png" alt="Full-screen weather widget with temperature, conditions, humidity, wind and precipitation"></a>
 </p>
 
 <p align="center">
