@@ -9,10 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="screenshots/note4c_title.png"><img src="screenshots/note4c_title.png" width="360" alt="Dashboard with a to-do list, connected UniFi clients and current weather"></a>
   <a href="screenshots/note4c_weather.png"><img src="screenshots/note4c_weather.png" width="360" alt="Full-screen weather widget with temperature, conditions, humidity, wind and precipitation"></a>
-  <br>
-  <em>A compact dashboard and a full-screen weather widget.</em>
 </p>
 
 <p align="center">
