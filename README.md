@@ -24,8 +24,6 @@
 
 Display pictures from [Tesserae](https://github.com/dmellok/tesserae) Cloud or your own Tesserae server on the **ZecTrix NOTE4C Devkit**. Configure Wi-Fi and your server from a phone, then let the device check for pictures on its schedule.
 
-Display operation, fast refresh, charging indication and normal sleep/wake cycles have been tested on hardware. Button responsiveness after the 1.2.1 fix and a normal Front wake/check/sleep cycle are confirmed; broader recovery testing and battery characterization remain open. See [CHANGELOG.md](CHANGELOG.md).
-
 ## What it does
 
 - Downloads pictures over Wi-Fi and skips repainting when the image is unchanged.
