@@ -5,11 +5,22 @@
 </p>
 
 <p align="center">
-  <strong>Firmware 1.2.1</strong> · ESP-IDF 6.1 · Local REST · Cloud · Relay
+  Local REST · Cloud · Relay
 </p>
 
 <p align="center">
-  <a href="screenshots/note4c_weather.png"><img src="screenshots/note4c_weather.png" alt="Full-screen weather widget with temperature, conditions, humidity, wind and precipitation"></a>
+  <a href="screenshots/note4c_weather.png"><img src="screenshots/note4c_weather.png" alt="Full-screen weather widget with temperature, conditions, humidity, wind and precipitation"></a><br>
+  <em>Note4C in action, displaying weather on its four-colour e-paper screen.</em>
+</p>
+
+<h3 align="center">Deep-sleep power consumption</h3>
+
+<p align="center">
+  <img src="screenshots/deep_sleep.png" alt="Note4C deep-sleep current measurement over 1 second" width="800">
+</p>
+
+<p align="center">
+  <strong>60.98 µA average</strong> · <strong>92.90 µA peak</strong><br>
 </p>
 
 <p align="center">
